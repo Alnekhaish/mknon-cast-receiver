@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>مكنون · شاشة المجلس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="monitor.css" />
+
+  <!--
+    Loaded on the actual Chromecast / Android TV. NOT loaded when previewing
+    the receiver in a regular browser — see local-dev.html for that path.
+  -->
+  <script src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+</head>
+<body>
+  <div id="bg"></div>
+
+  <main id="root">
+    <header id="topbar">
+      <div id="brand">
+        <span class="logo-dot"></span>
+        <span class="brand-text">مكنون · خلية الحروف</span>
+      </div>
+      <div id="status" class="status">بانتظار بدء اللعبة على المضيف…</div>
+    </header>
+
+    <section id="scoreboard">
+      <div class="player p1" id="player1">
+        <div class="name">—</div>
+        <div class="score">0</div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="player p2" id="player2">
+        <div class="name">—</div>
+        <div class="score">0</div>
+      </div>
+    </section>
+
+    <section id="banner" class="banner hidden">
+      <span id="banner-name"></span>
+      <span class="muted">يجيب الآن…</span>
+    </section>
+
+    <section id="board-wrap">
+      <div id="board" class="board"></div>
+    </section>
+  </main>
+
+  <script src="monitor.js"></script>
+</body>
+</html>
