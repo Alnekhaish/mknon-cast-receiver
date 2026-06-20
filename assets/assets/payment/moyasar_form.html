@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Payment</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.moyasar.com/mpf/1.15.0/moyasar.css"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+      }
+      .container {
+        padding: 16px;
+      }
+      .status {
+        margin-top: 16px;
+        font-size: 13px;
+        color: #444;
+        text-align: center;
+        min-height: 18px;
+      }
+      .error {
+        color: #b00020;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="mysr-form" id="mysr-form"></div>
+      <div id="status" class="status"></div>
+    </div>
+
+    <script src="https://cdn.moyasar.com/mpf/1.15.0/moyasar.js"></script>
+    <script>
+      (function () {
+        // ---------------------------------------------------------------
+        // Bridge to Flutter — sends JSON messages via JavaScriptChannel.
+        // ---------------------------------------------------------------
+        function postToFlutter(payload) {
+          try {
+            if (window.MaknoonBridge && typeof window.MaknoonBridge.postMessage === "function") {
+              window.MaknoonBridge.postMessage(JSON.stringify(payload));
+            }
+          } catch (e) {
+            // No-op — the WebView's URL navigation delegate is the fallback.
+          }
+        }
+
+        function setStatus(msg, isError) {
+          var el = document.getElementById("status");
+          if (!el) return;
+          el.textContent = msg || "";
+          el.className = "status" + (isError ? " error" : "");
+        }
+
+        // ---------------------------------------------------------------
+        // Initialize when Flutter has injected the config.
+        // ---------------------------------------------------------------
+        function init() {
+          var cfg = window.__MOYASAR_CONFIG__;
+          if (!cfg || !cfg.publishableKey || !cfg.amount) {
+            setStatus("Payment configuration missing.", true);
+            postToFlutter({ event: "init_failed", reason: "missing_config" });
+            return;
+          }
+
+          try {
+            Moyasar.init({
+              element: ".mysr-form",
+              amount: cfg.amount, // minor units
+              currency: cfg.currency || "SAR",
+              description: cfg.description || "",
+              publishable_api_key: cfg.publishableKey,
+              callback_url: cfg.callbackUrl,
+              metadata: cfg.metadata || {},
+              // Credit card only by default — Apple Pay / STC Pay need extra
+              // per-merchant config that isn't wired up yet.
+              methods: cfg.methods || ["creditcard"],
+              language: cfg.language || "ar",
+              on_completed: function (payment) {
+                // Moyasar invokes this both on success AND for some intermediate
+                // states (e.g. initiated, before 3DS). We forward everything to
+                // Flutter and let the backend's GET /payments/:id be the source
+                // of truth.
+                postToFlutter({
+                  event: "completed",
+                  payment: payment || null,
+                });
+                // Returning a resolved promise keeps Moyasar's UI consistent.
+                return Promise.resolve();
+              },
+              on_failure: function (err) {
+                postToFlutter({
+                  event: "failed",
+                  error: err || null,
+                });
+              },
+            });
+            postToFlutter({ event: "ready" });
+          } catch (e) {
+            setStatus("Failed to initialize payment.", true);
+            postToFlutter({
+              event: "init_failed",
+              reason: (e && e.message) || String(e),
+            });
+          }
+        }
+
+        // Flutter calls window.__bootMoyasar() once it has set the config.
+        window.__bootMoyasar = init;
+
+        // If the config was set BEFORE this script ran (very fast injection),
+        // boot immediately.
+        if (window.__MOYASAR_CONFIG__) {
+          init();
+        }
+      })();
+    </script>
+  </body>
+</html>
